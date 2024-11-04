@@ -1,44 +1,50 @@
 [
   {
-    "name": "Teste de adição",
-    "stat": "disabled",
+    "desc": "Teste de adição",
+    "stat": "enabled",
     "task": "add",
-    "cron": "*/5 * * * * *",
-    "args": [1, 2]
+    "cron": "*/20 * * * * *",
+    "args": [1, 2],
+    "kwargs": {}
   },
   {
-    "name": "Teste de subtração",
-    "stat": "disabled",
+    "desc": "Teste de subtração",
+    "stat": "enabled",
     "task": "subtract",
-    "cron": "*/2 * * * * *",
-    "args": [3, 4]
+    "cron": "*/20 * * * * *",
+    "args": [3, 4],
+    "kwargs": {}
   },
   {
-    "name": "Teste de multiplicação",
+    "desc": "Teste de multiplicação",
     "stat": "enabled",
     "task": "multiply",
-    "cron": "*/10 * * * * *",
-    "args": [5, 6]
+    "cron": "*/30 * * * * *",
+    "args": [5, 6],
+    "kwargs": {}
   },
   {
-    "name": "Teste de 1 segundos",
+    "desc": "Teste de 10 segundos",
     "stat": "enabled",
     "task": "test",
-    "cron": "*/1 * * * * *",
-    "args": ["Teste de 1 segundos"]
+    "cron": "*/20 * * * * *",
+    "args": ["Teste de 10 segundos"],
+    "kwargs": {}
   },
   {
-    "name": "Teste de 2 segundo",
-    "stat": "enabled",
+    "desc": "Teste de 20 segundo",
+    "stat": "disabled",
     "task": "test",
-    "cron": "*/2 * * * * *",
-    "args": ["Teste de 2 segundos"]
+    "cron": "*/30 * * * * *",
+    "args": ["Teste de 20 segundos"],
+    "kwargs": {}
   },
   {
-    "name": "Teste de 5 segundos",
-    "stat": "enabled",
+    "desc": "Teste de 30 segundos",
+    "stat": "disabled",
     "task": "test",
-    "cron": "*/5 * * * * *",
-    "args": ["Teste de 5 segundos"]
+    "cron": "*/30 * * * * *",
+    "args": ["Teste de 30 segundos"],
+    "kwargs": {}
   }
 ]
