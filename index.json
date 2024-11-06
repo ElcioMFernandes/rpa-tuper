@@ -1,0 +1,52 @@
+[
+  {
+    "task": "task",
+    "status": 1,
+    "cron": "*/10 * * * * *",
+    "args": [10],
+    "kwargs": {
+      "prefix": "Primeiro teste",
+      "sufix": "segundos"
+    }
+  },
+  {
+    "task": "task",
+    "status": 1,
+    "cron": "*/20 * * * * *",
+    "args": [20],
+    "kwargs": {
+      "prefix": "Segundo teste",
+      "sufix": "segundos"
+    }
+  },
+  {
+    "task": "task",
+    "status": 1,
+    "cron": "*/30 * * * * *",
+    "args": ["30"],
+    "kwargs": {
+      "prefix": "Terceiro teste",
+      "sufix": "segundos"
+    }
+  },
+  {
+    "task": "task",
+    "status": 1,
+    "cron": "*/40 * * * * *",
+    "args": ["40"],
+    "kwargs": {
+      "prefix": "Quarto teste",
+      "sufix": "segundos"
+    }
+  },
+  {
+    "task": "task",
+    "status": 1,
+    "cron": "*/50 * * * * *",
+    "args": ["50"],
+    "kwargs": {
+      "prefix": "Quinto teste",
+      "sufix": "segundos"
+    }
+  }
+]

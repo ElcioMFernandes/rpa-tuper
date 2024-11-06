@@ -1,1 +1,0 @@
---trusted-host pypi.org --trusted-host files.pythonhosted.org --disable-pip-version-check

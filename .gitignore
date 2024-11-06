@@ -1,4 +1,6 @@
+.venv
 venv
-log
-*.log
 __pycache__
+__init__.py
+log
+media
