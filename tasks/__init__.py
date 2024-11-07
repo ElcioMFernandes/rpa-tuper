@@ -1,4 +1,4 @@
-import os, asyncio, datetime, functools
+import os, asyncio, datetime, functools, hashlib
 
 def task(func):
     @functools.wraps(func)
@@ -19,6 +19,6 @@ def task(func):
             else:
                 r = func(*args, **kwargs)
 
-            l.write("Fim.")
+            l.write("Fim.\n")
         return r
     return wrapper
