@@ -56,8 +56,8 @@ async def lifespan(api: FastAPI):
 api.router.lifespan_context = lifespan
 
 # Retorna a lista de tarefas na queue
-@api.get("/queue/{task_id}")
 @api.get("/queue/")
+@api.get("/queue/{task_id}")
 async def read(task_id: Optional[str] = None):
     if task_id:
         job = scheduler.get_job(task_id)
@@ -198,7 +198,7 @@ async def resume(task_id: str):
         )
 
 # Remover uma tarefa da queue
-@api.delete("/queue/task/")
+@api.delete("/queue/{task_id}/")
 async def remove(task_id: str):
     job = scheduler.get_job(task_id)
 
@@ -224,91 +224,142 @@ async def remove(task_id: str):
                 "task_id": task_id,
                 "paused": False
             }
-        )        
+        )
 
-# Adiciona uma tarefa a queue - ENDPOINT INCOMPLETO
-@api.post("/queue/task/")
-async def create(id: str):
-    jobs = scheduler.get_jobs()
-
-    running = False
-
-    for job in jobs:
-        if id == job.id:
-            running = True
-            break
-    
-    if running:
-        return {"message": f"Tarefa {id} já está na queue."}
-
-    return {"message": f"Tarefa {id} adicionada na queue."}
-
-# Retorna todas as tarefas disponíveis - ENDPOINT PRONTO
-@api.get("/task/")
-async def read():
-    with open(file="index.json", mode="r", encoding="utf-8") as f:
-        return json.load(f)
-
-# Criar uma nova tarefa - ENDPOINT PRONTO
-@api.post("/task/create/")
-async def create(task: TaskModel):
-    # Verifica se a tarefa existe no diretório 'tasks'
-    found = False
-    available = os.listdir('tasks')
-    for i in available:
-        if task.task == i.removesuffix('.py'):
-            found = True
-            break
-    
-    if not found:
-        return {"message": f"Tarefa '{task.task}' não encontrada."}
-
-    # Verifica se o status é válido (0 ou 1)
-    if task.status not in [0, 1]:
-        task.status = 1  # Define como 1 se o valor fornecido não for válido
-
-    # Carrega o conteúdo do arquivo JSON ou inicia uma lista vazia se o arquivo não existir
-    try:
-        with open("index.json", mode="r", encoding="utf-8") as f:
-            data = json.load(f)
-    except FileNotFoundError:
-        data = []
-
-    exists = False
-
-    for j in data:
-        if task.name in j.get('name'):
-            exists = True
-            break
-
-    if exists:
-        return {"message": f"Tarefa '{task.task}' já existe com esse id {task.name}."}
-
-    # Adiciona a nova tarefa à lista carregada
-    data.append(task.dict())  # Converte o objeto TaskModel para dicionário
-
-    # Escreve o conteúdo atualizado no arquivo JSON
-    with open("index.json", mode="w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
-
-    se, mi, ho, da, we, mo = task.cron.split()
-
-    scheduler.add_job(
-        importlib.import_module(f"tasks.{task.task}").main,
-                    trigger = CronTrigger(second=se, minute=mi, hour=ho, day=da, day_of_week=we, month=mo),
-                    args    = task.args,
-                    kwargs  = task.kwargs
-                )
-
-    return {"message": f"Tarefa '{task.task}' criada com sucesso.", "task": task.dict()}
-
-# Atualiza valor de uma tarefa - ENDPOINT INCOMPLETO
-@api.patch("/task/")
-async def update(id: str, field: str, value):
-    job = scheduler.get_job(id)
+# Adiciona uma tarefa na queue
+@api.post("/queue/{task_id}/")
+async def create(task_id: str):
+    job = scheduler.get_job(task_id)
 
     if job:
-        return {"message": f"Tarefa {id} retomada."}
+        return responses.JSONResponse(
+            status_code = 200,
+            content = {
+                    "detail": {
+                    "status": "success",
+                    "message": f"Task already exists",
+                    "task_id": task_id,
+                    "created": False
+                }                   
+            }
+        )
     
     else:
-        return {"message": f"Tarefa {id} não encontrada."}
+        with open(file = "index.json", mode = "r", encoding = "utf-8") as f:
+            data = json.load(f)
+
+        for i in data:
+            if i.get("name") == task_id:
+                i["status"] = 1
+                break
+
+        with open(file = "index.json", mode = "w", encoding = "utf-8") as f:
+            json.dump(data, f, indent = 4, ensure_ascii = False)
+
+        se, mi, ho, da, we, mo = i.get('cron').split()
+        scheduler.add_job(
+            importlib.import_module(f"tasks.{i.get('task')}").main,
+            trigger = CronTrigger(second=se, minute=mi, hour=ho, day=da, day_of_week=we, month=mo),
+            id      = i.get('name'),
+            args    = i.get('args', []),
+            kwargs  = i.get('kwargs', {})
+        )
+
+        return responses.JSONResponse(
+            status_code = 200,
+            content = {
+                    "detail": {
+                    "status": "success",
+                    "message": f"Task added",
+                    "task_id": task_id,
+                    "created": True
+                }                   
+            }
+        )
+
+# Retorna todas as tarefas disponíveis
+@api.get("/task/")
+@api.get("/task/{task_id}")
+async def read(task_id: Optional[str] = None):
+    with open(file = "index.json", mode = "r", encoding = "utf-8") as f:
+        data = json.load(f)
+
+    if task_id:
+        for i in data:
+            if i.get("name") == task_id:
+                return responses.JSONResponse(
+                    status_code = 200,
+                    content = {
+                        "status": "success",
+                        "message": "Task details retrieved",
+                        "task": i
+                    }
+                )
+
+        return responses.JSONResponse(
+            status_code = 404,
+            content = {
+                "status": "failure",
+                "message": "Task not found",
+                "task_id": task_id
+            }
+        )
+
+    return responses.JSONResponse(
+        status_code = 200,
+        content = {
+            "status": "success",
+            "message": "List of all tasks",
+            "tasks": data
+        }
+    )
+
+# Cria uma nova tarefa
+@api.post("/task/create/")
+async def create(task: TaskModel):
+    with open(file = "index.json", mode = "r", encoding = "utf-8") as f:
+        data = json.load(f)
+
+    if task.name in [i.get("name") for i in data]:
+        return HTTPException(
+            status_code = 400,
+            detail = {
+                "status": "failure",
+                "message": "Task id already exists",
+                "task_id": task.name
+            }
+        )
+
+    if task.task not in os.listdir("tasks"):
+        return HTTPException(
+            status_code = 400,
+            detail = {
+                "status": "failure",
+                "message": "Task not found",
+                "task_id": task.task
+            }
+        )
+    
+    if task.cron.split() != 6:
+        return HTTPException(
+            status_code = 400,
+            detail = {
+                "status": "failure",
+                "message": "Invalid cron format",
+                "task_id": task.cron
+            }
+        )
+
+    data.append(task.model_dump())
+
+    with open(file = "index.json", mode = "w", encoding = "utf-8") as f:
+        json.dump(data, f, indent = 4, ensure_ascii = False)
+
+    return responses.JSONResponse(
+        status_code = 200,
+        content = {
+            "status": "success",
+            "message": "Task created",
+            "task": task.model_dump()
+        }
+    )

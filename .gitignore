@@ -4,4 +4,4 @@ __pycache__
 __init__.py
 log
 media
-*.json
+index.json

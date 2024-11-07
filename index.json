@@ -1,69 +1,79 @@
 [
-  {
-    "name": "teste_de_10_segundos",
-    "task": "task",
-    "status": 0,
-    "cron": "*/10 * * * * *",
-    "args": [10],
-    "kwargs": {
-      "prefix": "Primeiro teste",
-      "sufix": "segundos"
+    {
+        "name": "teste_de_10_segundos",
+        "task": "task",
+        "status": 0,
+        "cron": "*/10 * * * * *",
+        "args": [
+            10
+        ],
+        "kwargs": {
+            "prefix": "Primeiro teste",
+            "sufix": "segundos"
+        }
+    },
+    {
+        "name": "teste_de_20_segundos",
+        "task": "task",
+        "status": 0,
+        "cron": "*/20 * * * * *",
+        "args": [
+            20
+        ],
+        "kwargs": {
+            "prefix": "Segundo teste",
+            "sufix": "segundos"
+        }
+    },
+    {
+        "name": "teste_de_30_segundos",
+        "task": "task",
+        "status": 0,
+        "cron": "*/30 * * * * *",
+        "args": [
+            "30"
+        ],
+        "kwargs": {
+            "prefix": "Terceiro teste",
+            "sufix": "segundos"
+        }
+    },
+    {
+        "name": "teste_de_40_segundos",
+        "task": "task",
+        "status": 0,
+        "cron": "*/40 * * * * *",
+        "args": [
+            "40"
+        ],
+        "kwargs": {
+            "prefix": "Quarto teste",
+            "sufix": "segundos"
+        }
+    },
+    {
+        "name": "teste_de_50_segundos",
+        "task": "task",
+        "status": 1,
+        "cron": "*/50 * * * * *",
+        "args": [
+            "50"
+        ],
+        "kwargs": {
+            "prefix": "Quinto teste",
+            "sufix": "segundos"
+        }
+    },
+    {
+        "name": "teste_power_automate",
+        "task": "power_automate",
+        "status": 0,
+        "cron": "*/20 * * * * *",
+        "args": [
+            "https://prod-12.brazilsouth.logic.azure.com:443/workflows/c712443eb05343f88a5ef8b533bdec8f/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=9dcrQCiq0NvQxYAsO88OxUG2oYCuaQXnDWWOkjXpFbk"
+        ],
+        "kwargs": {
+            "message": "Funcionou"
+        }
     }
-  },
-  {
-    "name": "teste_de_20_segundos",
-    "task": "task",
-    "status": 0,
-    "cron": "*/20 * * * * *",
-    "args": [20],
-    "kwargs": {
-      "prefix": "Segundo teste",
-      "sufix": "segundos"
-    }
-  },
-  {
-    "name": "teste_de_30_segundos",
-    "task": "task",
-    "status": 0,
-    "cron": "*/30 * * * * *",
-    "args": ["30"],
-    "kwargs": {
-      "prefix": "Terceiro teste",
-      "sufix": "segundos"
-    }
-  },
-  {
-    "name": "teste_de_40_segundos",
-    "task": "task",
-    "status": 1,
-    "cron": "*/40 * * * * *",
-    "args": ["40"],
-    "kwargs": {
-      "prefix": "Quarto teste",
-      "sufix": "segundos"
-    }
-  },
-  {
-    "name": "teste_de_50_segundos",
-    "task": "task",
-    "status": 1,
-    "cron": "*/50 * * * * *",
-    "args": ["50"],
-    "kwargs": {
-      "prefix": "Quinto teste",
-      "sufix": "segundos"
-    }
-  },
-  {
-    "name": "teste_power_automate",
-    "task": "power_automate",
-    "status": 0,
-    "cron": "*/20 * * * * *",
-    "args": [
-      "https://prod-12.brazilsouth.logic.azure.com:443/workflows/c712443eb05343f88a5ef8b533bdec8f/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=9dcrQCiq0NvQxYAsO88OxUG2oYCuaQXnDWWOkjXpFbk"
-    ],
-    "kwargs": {
-      "message": "Funcionou"
-    }
-  }
 ]
