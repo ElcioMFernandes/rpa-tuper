@@ -2,7 +2,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from contextlib import asynccontextmanager
 from pydantic import BaseModel, Field
-from fastapi import FastAPI, HTTPException, responses
+from fastapi import FastAPI, HTTPException, responses, WebSocket
+from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Dict, Any, Optional
 import os, json, asyncio, importlib
 
@@ -17,6 +18,21 @@ class TaskModel(BaseModel):
 
 # Cria a API com FastAPI
 api = FastAPI()
+
+connected_clients = List[WebSocket] = []
+
+# Configuração de CORS para permitir o frontend React
+origins = [
+    "http://localhost:5173",  # URL do seu frontend React
+]
+
+api.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,          # Permite apenas as origens especificadas
+    allow_credentials=True,
+    allow_methods=["*"],            # Permite todos os métodos (GET, POST, etc)
+    allow_headers=["*"],            # Permite todos os cabeçalhos
+)
 
 # Cria o agendador assíncrono
 scheduler = AsyncIOScheduler()
@@ -51,13 +67,26 @@ async def lifespan(api: FastAPI):
         yield
     finally:
         scheduler.remove_all_jobs()
-        scheduler.shutdown(wait=False)
+        scheduler.shutdown(wait=True)
 
 api.router.lifespan_context = lifespan
 
-# Retorna a lista de tarefas na queue
-@api.get("/queue/")
-@api.get("/queue/{task_id}")
+@api.webhooks("/ws/notifications")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    connected_clients.append(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except:
+        connected_clients.remove(websocket)
+
+async def notify_clients(message: str):
+    for client in connected_clients:
+        await client.send_text(message)
+
+@api.get("/queue/")          # Retorna a lista de tarefas na queue
+@api.get("/queue/{task_id}") # Retorna uma tarefa da queue, se existir
 async def read(task_id: Optional[str] = None):
     if task_id:
         job = scheduler.get_job(task_id)
@@ -111,8 +140,7 @@ async def read(task_id: Optional[str] = None):
         }
     )
 
-# Pausar uma tarefa por tempo indeterminado ou até que seja reiniciado o scheduler
-@api.get("/queue/{task_id}/pause/")
+@api.get("/queue/{task_id}/pause/") # Pausar uma tarefa por tempo indeterminado ou até que seja reiniciado o scheduler
 async def pause(task_id: str):
     job = scheduler.get_job(task_id)
     
@@ -155,8 +183,7 @@ async def pause(task_id: str):
             }
         )
 
-# Retomar a execução de uma tarefa
-@api.get("/queue/{task_id}/resume/")
+@api.get("/queue/{task_id}/resume/") # Retomar a execução de uma tarefa
 async def resume(task_id: str):
     job = scheduler.get_job(task_id)
 
@@ -197,8 +224,7 @@ async def resume(task_id: str):
             }
         )
 
-# Remover uma tarefa da queue
-@api.delete("/queue/{task_id}/")
+@api.delete("/queue/") # Remover uma tarefa da queue
 async def remove(task_id: str):
     job = scheduler.get_job(task_id)
 
@@ -222,12 +248,11 @@ async def remove(task_id: str):
                 "status": "failure",
                 "message": f"Task not found",
                 "task_id": task_id,
-                "paused": False
+                "removed": False
             }
         )
 
-# Adiciona uma tarefa na queue
-@api.post("/queue/{task_id}/")
+@api.post("/queue/") # Adiciona uma tarefa na queue
 async def create(task_id: str):
     job = scheduler.get_job(task_id)
 
@@ -277,9 +302,8 @@ async def create(task_id: str):
             }
         )
 
-# Retorna todas as tarefas disponíveis
-@api.get("/task/")
-@api.get("/task/{task_id}")
+@api.get("/task/") # Retorna os detalhes de todas as tarefas disponíveis
+@api.get("/task/{task_id}") # Retorna os detalhes da tarefa especificada.
 async def read(task_id: Optional[str] = None):
     with open(file = "index.json", mode = "r", encoding = "utf-8") as f:
         data = json.load(f)
@@ -314,8 +338,7 @@ async def read(task_id: Optional[str] = None):
         }
     )
 
-# Cria uma nova tarefa
-@api.post("/task/create/")
+@api.post("/task/") # Registra uma nova tarefa
 async def create(task: TaskModel):
     with open(file = "index.json", mode = "r", encoding = "utf-8") as f:
         data = json.load(f)
@@ -326,7 +349,8 @@ async def create(task: TaskModel):
             detail = {
                 "status": "failure",
                 "message": "Task id already exists",
-                "task_id": task.name
+                "task_id": task.name,
+                "created": False
             }
         )
 
@@ -336,7 +360,8 @@ async def create(task: TaskModel):
             detail = {
                 "status": "failure",
                 "message": "Task not found",
-                "task_id": task.task
+                "task_id": task.task,
+                "created": False
             }
         )
     
@@ -346,7 +371,8 @@ async def create(task: TaskModel):
             detail = {
                 "status": "failure",
                 "message": "Invalid cron format",
-                "task_id": task.cron
+                "task_id": task.cron,
+                "created": False
             }
         )
 
@@ -360,6 +386,93 @@ async def create(task: TaskModel):
         content = {
             "status": "success",
             "message": "Task created",
-            "task": task.model_dump()
+            "task": task.model_dump(),
+            "created": True
+        }
+    )
+
+@api.delete("/task/") # Desativa uma tarefa, mas não remove
+async def deactive(task_id: str):
+    with open("index.json", mode="r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    for i in data:
+        if task_id == i.get("name"):
+            if i.get("status") == 0:
+                return responses.JSONResponse(
+                    status_code=200,
+                    content={
+                        "status": "success",
+                        "message": "Task is already disabled",
+                        "task_id": task_id,
+                        "disabled": False
+                    }
+                )
+            else:
+                i["status"] = 0
+                with open("index.json", mode="w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=4, ensure_ascii=False)
+
+                return responses.JSONResponse(
+                    status_code=200,
+                    content={
+                        "status": "success",
+                        "message": "Task disabled",
+                        "task_id": task_id,
+                        "disabled": True
+                    }
+                )
+
+    # Caso a tarefa não seja encontrada
+    raise HTTPException(
+        status_code=400,
+        detail={
+            "status": "failure",
+            "message": "Task not found",
+            "task_id": task_id,
+            "disabled": False
+        }
+    )
+
+@api.patch("/task/") # Ativa uma tarefa, mas não remove
+async def deactive(task_id: str):
+    with open("index.json", mode="r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    for i in data:
+        if task_id == i.get("name"):
+            if i.get("status") == 1:
+                return responses.JSONResponse(
+                    status_code=200,
+                    content={
+                        "status": "success",
+                        "message": "Task is already enabled",
+                        "task_id": task_id,
+                        "enabled": False
+                    }
+                )
+            else:
+                i["status"] = 1
+                with open("index.json", mode="w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=4, ensure_ascii=False)
+
+                return responses.JSONResponse(
+                    status_code=200,
+                    content={
+                        "status": "success",
+                        "message": "Task enabled",
+                        "task_id": task_id,
+                        "enabled": True
+                    }
+                )
+
+    # Caso a tarefa não seja encontrada
+    raise HTTPException(
+        status_code=400,
+        detail={
+            "status": "failure",
+            "message": "Task not found",
+            "task_id": task_id,
+            "enabled": False
         }
     )
